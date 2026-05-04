@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 import anthropic
 from telegram import Update
@@ -314,56 +313,12 @@ async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ALLOWED_USER_ID and update.effective_user.id != ALLOWED_USER_ID:
         return
-    
-    await update.message.reply_text("🎤 Sto trascrivendo il vocale...")
-    
-    try:
-        voice = update.message.voice
-        file = await context.bot.get_file(voice.file_id)
-        
-        import tempfile, httpx
-        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
-            tmp_path = tmp.name
-        
-        async with httpx.AsyncClient() as http_client:
-            response = await http_client.get(file.file_path)
-            with open(tmp_path, "wb") as f:
-                f.write(response.content)
-        
-        # Transcribe with Claude using base64
-        import base64
-        with open(tmp_path, "rb") as f:
-            audio_data = base64.b64encode(f.read()).decode()
-        
-        # Use Whisper via a simple approach - send as document to Claude
-        # Actually use the messages API with audio (if supported) or fallback
-        transcription_response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=500,
-            messages=[{
-                "role": "user",
-                "content": "Questo è un messaggio vocale in italiano da trascrivere. Il file audio non è disponibile direttamente, quindi rispondi solo: 'Trascrizione non disponibile - usa testo'"
-            }]
-        )
-        transcribed_text = transcription_response.content[0].text
-        
-        os.unlink(tmp_path)
-        
-        if "non disponibile" in transcribed_text.lower():
-            await update.message.reply_text(
-                "⚠️ Trascrizione vocale non disponibile in questa configurazione.\n"
-                "Scrivi il messaggio come testo e rispondo subito!"
-            )
-            return
-            
-        await handle_text(update, context, override_text=transcribed_text)
-        
-    except Exception as e:
-        logger.error(f"Voice error: {e}")
-        await update.message.reply_text(
-            "⚠️ Non riesco a trascrivere il vocale.\n"
-            "Scrivi il messaggio come testo!"
-        )
+    await update.message.reply_text(
+        "🎤 Ho ricevuto il tuo vocale!\n\n"
+        "Per ora scrivi il messaggio come testo — la trascrizione vocale "
+        "sarà disponibile nella prossima versione.\n\n"
+        "Scrivi quello che volevi dire e rispondo subito! 💬"
+    )
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE, override_text=None):
     if ALLOWED_USER_ID and update.effective_user.id != ALLOWED_USER_ID:
